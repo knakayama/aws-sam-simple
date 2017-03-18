@@ -1,0 +1,29 @@
+version: 0.1
+
+phases:
+  install:
+    commands:
+      - |
+        pip install -U pip
+        pip install -U awscli
+  pre_build:
+    commands:
+      - |
+        [ -d .sam ] || mkdir .sam
+        aws configure set default.region $AWS_REGION
+        for template in sam.yml; do
+          echo "$template" | xargs -I% -t aws cloudformation validate-template --template-body file://%
+        done
+  build:
+    commands:
+      - |
+        aws cloudformation package \
+          --template-file sam.yml \
+          --s3-bucket $S3_BUCKET \
+          --output-template-file .sam/packaged.yml
+
+artifacts:
+  files:
+    - .sam/*
+    - params/*
+  discard-paths: yes
